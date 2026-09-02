@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>NEREON Control Room</title>
+  <link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="dot"></span><div><strong>NEREON</strong><small>Control Room</small></div></div>
+      <a href="/" class="back">Open site ↗</a>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">PRIVATE / READ ONLY</p>
+        <h1>Lead intelligence.</h1>
+        <p class="sub">See every automation-planner lead and the workflow context they submitted.</p>
+      </section>
+
+      <section id="loginCard" class="panel">
+        <h2>Admin access</h2>
+        <p>Enter the NEREON Admin Token configured in Cloudflare.</p>
+        <div class="row">
+          <input id="token" type="password" autocomplete="current-password" placeholder="ADMIN_TOKEN">
+          <button id="connect" type="button">Connect</button>
+        </div>
+        <div id="loginStatus" class="status"></div>
+      </section>
+
+      <section id="dashboard" class="hidden">
+        <div class="metrics">
+          <div class="metric"><span>Total shown</span><strong id="count">—</strong></div>
+          <div class="metric"><span>High signal</span><strong id="high">—</strong></div>
+          <div class="metric"><span>Latest</span><strong id="latest">—</strong></div>
+        </div>
+        <div class="toolbar panel compact">
+          <input id="search" type="search" placeholder="Search name, company, email or workflow…">
+          <button id="refresh" type="button">Refresh</button>
+          <button id="logout" type="button" class="ghost">Lock</button>
+        </div>
+        <div id="list" class="lead-list"></div>
+      </section>
+    </main>
+  </div>
+  <script src="./admin.js"></script>
+</body>
+</html>
