@@ -1,0 +1,25 @@
+{
+  "brand": "NEREON",
+  "descriptor": "AI-Native Product Engineering",
+  "primaryCustomer": {
+    "type": "Founder-led startups, product teams, and growth-stage companies",
+    "signal": "They have a valuable product idea, an existing product that needs a stronger engineering layer, or a workflow that should be automated."
+  },
+  "coreProblem": "Turning complex product ideas and operational friction into production-ready software without adding unnecessary complexity.",
+  "promise": "From product idea to production-ready AI and software systems.",
+  "differentiators": [
+    "AI-native product thinking",
+    "Senior software engineering focus",
+    "Automation and workflow systems",
+    "Production-first architecture",
+    "One accountable engineering partner"
+  ],
+  "proofStrategy": [
+    "Show real product outcomes",
+    "Show architecture decisions without exposing client secrets",
+    "Show measurable workflow improvements when verified",
+    "Use case studies instead of generic capability claims"
+  ],
+  "primaryCTA": "Start a project",
+  "secondaryCTA": "Explore capabilities"
+}

@@ -1,0 +1,37 @@
+/* PHASE 81 — NEREON Brand Identity */
+:root {
+  --nereon-ink: #02080d;
+  --nereon-deep: #04131e;
+  --nereon-blue-900: #052638;
+  --nereon-blue-700: #075b7d;
+  --nereon-blue-500: #159dca;
+  --nereon-blue-300: #55ddff;
+  --nereon-cyan: #9bf0ff;
+  --nereon-white: #eefaff;
+  --nereon-muted: #8ca7b8;
+  --nereon-line: rgba(85, 221, 255, .16);
+  --nereon-glow: 0 0 42px rgba(47, 201, 255, .16);
+}
+
+.nereon-lockup { display:inline-flex; align-items:center; gap:.8rem; text-decoration:none; color:var(--nereon-white); }
+.nereon-lockup__mark { width:2rem; height:2rem; flex:none; }
+.nereon-lockup__name { font-weight:760; letter-spacing:-.03em; }
+.nereon-lockup__descriptor { display:block; margin-top:.15rem; color:var(--nereon-muted); font-size:.58rem; letter-spacing:.16em; text-transform:uppercase; }
+
+.nereon-brand-surface {
+  background:
+    radial-gradient(circle at 72% 24%, rgba(85,221,255,.10), transparent 24%),
+    radial-gradient(circle at 18% 78%, rgba(21,157,202,.08), transparent 28%),
+    var(--nereon-deep);
+  color:var(--nereon-white);
+}
+
+.nereon-accent { color:var(--nereon-blue-300); }
+.nereon-glow { box-shadow:var(--nereon-glow); }
+
+[data-brand-reveal] { opacity:0; transform:translateY(12px); transition:opacity 600ms cubic-bezier(.22,.61,.36,1), transform 600ms cubic-bezier(.22,.61,.36,1); }
+[data-brand-reveal].is-visible { opacity:1; transform:none; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-brand-reveal] { opacity:1; transform:none; transition:none; }
+}

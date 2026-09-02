@@ -1,0 +1,13 @@
+{
+  "principles": [
+    {"title":"Production first","text":"Architecture and delivery choices are made for real users, real operations and the next stage of the product."},
+    {"title":"Clear scope","text":"Every engagement starts with a defined outcome, constraints and a delivery path before implementation expands."},
+    {"title":"Evidence over hype","text":"We publish verified outcomes and keep unverified client names, logos and performance claims out of the site."}
+  ],
+  "faqs": [
+    {"q":"What does NEREON build?","a":"AI products, SaaS systems, business automation, internal platforms and client-facing software experiences."},
+    {"q":"How does an engagement start?","a":"A short project signal leads into qualification and discovery. Scope, timeline and commercial terms are confirmed before delivery."},
+    {"q":"Do you work with existing products?","a":"Yes. NEREON can extend, rebuild or harden an existing product when the business case and technical context support it."},
+    {"q":"How do you estimate projects?","a":"Pricing follows discovery. Published ranges are positioning guidance rather than a guaranteed quote."}
+  ]
+}

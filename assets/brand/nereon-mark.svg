@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">NEREON mark</title>
+  <desc id="desc">Abstract deep-ocean wave mark for NEREON.</desc>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9bf0ff"/>
+      <stop offset=".45" stop-color="#2fc9ff"/>
+      <stop offset="1" stop-color="#007ea9"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="64" fill="#031019"/>
+  <path d="M56 151c26-42 57-63 93-63 21 0 39 6 51 18-13-1-25 2-36 9-15 9-28 23-39 42-19 32-43 44-69 35 0 0-1 0 0-1Z" fill="url(#g)"/>
+  <path d="M57 179c27-8 49-28 66-60 11-20 26-32 45-37-10 15-13 31-9 48 6 24 23 37 50 38-18 23-40 34-66 34-38 0-66-8-86-23Z" fill="#0a6885" opacity=".62"/>
+</svg>

@@ -1,0 +1,42 @@
+{
+  "currency": "EUR",
+  "pricingPolicy": "Quote after discovery; listed ranges are internal positioning guidance, not guaranteed market prices.",
+  "offers": [
+    {
+      "id": "automation-sprint",
+      "name": "AI Automation Sprint",
+      "bestFor": "Teams with a repeatable manual workflow or lead/process bottleneck",
+      "outcome": "One production-ready automation workflow with a measurable handoff point",
+      "timeline": "2–4 weeks",
+      "priceRange": "€3k–€8k",
+      "cta": "Automate a workflow"
+    },
+    {
+      "id": "ai-mvp-sprint",
+      "name": "AI MVP Sprint",
+      "bestFor": "Founders who need a focused AI/software MVP",
+      "outcome": "Validated MVP scope, architecture, implementation and production handoff",
+      "timeline": "4–8 weeks",
+      "priceRange": "€10k–€20k+",
+      "cta": "Build an MVP"
+    },
+    {
+      "id": "product-build",
+      "name": "Product Build",
+      "bestFor": "Companies building or rebuilding a serious software product",
+      "outcome": "End-to-end product engineering across frontend, backend, data and cloud",
+      "timeline": "8–20+ weeks",
+      "priceRange": "€20k–€50k+",
+      "cta": "Build the product"
+    },
+    {
+      "id": "engineering-partner",
+      "name": "Engineering Partner",
+      "bestFor": "Teams needing ongoing senior technical execution",
+      "outcome": "Continuous product delivery, architecture and AI/software engineering support",
+      "timeline": "Monthly",
+      "priceRange": "Custom retainer",
+      "cta": "Discuss ongoing work"
+    }
+  ]
+}
