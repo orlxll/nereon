@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://orlxll.github.io/nereon/sitemap.xml
