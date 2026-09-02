@@ -39,11 +39,22 @@ function initPlanner(){
   email.addEventListener("click",()=>{if(!last)return;const text=String(textEl.value||"").trim();const subject=encodeURIComponent("NEREON automation blueprint request");const body=encodeURIComponent(["Hello NEREON,","","Here is the workflow I would like to explore:",text,"",`Assessment: ${last.title}`,`Signal: ${last.signal} (${last.score}/100)`,"","Suggested blueprint:",...last.stages.map((x,i)=>`${i+1}. ${x[0]} — ${x[1]}`),"","Please contact me to discuss a focused pilot."].join("\n"));window.location.href=`mailto:nereon.studio@gmail.com?subject=${subject}&body=${body}`;status.textContent="Opening your email app…";status.className="form-status success";});
 }
 
+function apiEnabled(){
+  const host=window.location.hostname;
+  return !host.endsWith('github.io') && !host.startsWith('localhost') && !host.startsWith('127.0.0.1');
+}
+async function capturePlannerLead(payload){
+  const res=await fetch('/api/public/automation-plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  let data={};
+  try{data=await res.json();}catch{}
+  if(!res.ok)throw new Error(data.error||'capture_failed');
+  return data;
+}
 function initPlannerLead(){
   const form=document.getElementById("plannerLeadForm");
   const status=document.getElementById("plannerLeadStatus");
   if(!form||!status)return;
-  form.addEventListener("submit",e=>{
+  form.addEventListener("submit",async e=>{
     e.preventDefault();
     const email=String(document.getElementById("leadEmail")?.value||"").trim();
     const name=String(document.getElementById("leadName")?.value||"").trim();
@@ -51,17 +62,27 @@ function initPlannerLead(){
     const focus=String(document.getElementById("leadFocus")?.value||"").trim();
     const plannerText=String(document.getElementById("plannerText")?.value||"").trim();
     if(!email||!name||!company){status.textContent="Please add your name, company and work email.";status.className="form-status error";return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){status.textContent="Please use a valid work email.";status.className="form-status error";return;}
     const last=typeof window.__nereonPlannerLast!=="undefined"?window.__nereonPlannerLast:null;
-    let subject=`NEREON discovery request — ${company}`;
+    const payload={name,email,company,focus,workflow:plannerText,assessment:last?.title||"",signal:last?.signal||"",score:last?.score??null,blueprint:(last?.stages||[]).slice(0,8).map(x=>({title:x[0],detail:x[1]}))};
+    if(apiEnabled()){
+      status.textContent="Saving your workflow brief…";
+      status.className="form-status";
+      try{
+        const result=await capturePlannerLead(payload);
+        status.textContent=`Workflow brief received. Reference: ${result.leadId.slice(0,8)}.`;
+        status.className="form-status success";
+        form.reset();
+        return;
+      }catch(err){
+        console.warn('Lead capture unavailable; falling back to email.',err);
+      }
+    }
+    const subject=`NEREON discovery request — ${company}`;
     const lines=[`Hello NEREON,` , "",`Name: ${name}`,`Work email: ${email}`,`Company: ${company}`];
     if(focus) lines.push(`Focus: ${focus}`);
-    if(plannerText){
-      lines.push("","Workflow description:",plannerText);
-    }
-    if(last){
-      lines.push("",`Assessment: ${last.title}`,`Signal: ${last.signal} (${last.score}/100)`,"","Suggested blueprint:");
-      last.stages.forEach((x,i)=>lines.push(`${i+1}. ${x[0]} — ${x[1]}`));
-    }
+    if(plannerText) lines.push("","Workflow description:",plannerText);
+    if(last){lines.push("",`Assessment: ${last.title}`,`Signal: ${last.signal} (${last.score}/100)` ,"","Suggested blueprint:");last.stages.forEach((x,i)=>lines.push(`${i+1}. ${x[0]} — ${x[1]}`));}
     lines.push("","Please contact me to discuss the next step.");
     window.location.href=`mailto:nereon.studio@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
     status.textContent="Opening your email app with the discovery brief ready…";

@@ -1,0 +1,12 @@
+name = "nereon-site"
+compatibility_date = "2026-09-01"
+pages_build_output_dir = "."
+
+# After you create the D1 database, replace REPLACE_WITH_DATABASE_ID below.
+# Cloudflare Pages also lets you attach the same D1 binding from the dashboard:
+# Workers & Pages -> your project -> Settings -> Bindings -> Add -> D1 database
+[[d1_databases]]
+binding = "DB"
+database_name = "nereon-leads"
+database_id = "REPLACE_WITH_DATABASE_ID"
+migrations_dir = "migrations"
