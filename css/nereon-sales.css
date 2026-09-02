@@ -14,3 +14,19 @@
 .blueprint-step small{color:#8eaab4;line-height:1.45}
 .blueprint-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto}
 @media (max-width: 860px){.planner-grid{grid-template-columns:1fr}}
+
+/* V6 lead capture */
+.lead-capture-section{position:relative;overflow:hidden}
+.lead-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:18px}
+.lead-copy{background:linear-gradient(145deg,rgba(21,157,202,.1),rgba(3,12,18,.72))}
+.lead-badge{display:inline-flex;padding:7px 10px;border:1px solid var(--line);border-radius:999px;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.12em}
+.lead-copy h3{font-size:36px;line-height:1.02;letter-spacing:-.04em;margin:18px 0 12px}
+.lead-copy>p{color:var(--muted);font-size:17px;line-height:1.65}
+.lead-points{display:grid;gap:12px;margin-top:24px}
+.lead-points>div{display:grid;grid-template-columns:.6fr 1.4fr;gap:16px;padding-top:14px;border-top:1px solid var(--line)}
+.lead-points span{color:var(--muted);line-height:1.5}
+.lead-form-panel{padding:26px}
+.lead-form label{display:grid;gap:7px;margin-bottom:14px;color:var(--muted);font-size:12px;font-weight:700}
+.lead-form input,.lead-form textarea{width:100%;border:1px solid rgba(140,189,224,.16);border-radius:14px;background:#041019;color:var(--text);padding:12px 14px;outline:none;font:inherit}
+.lead-form input:focus,.lead-form textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(85,221,255,.08)}
+@media(max-width:860px){.lead-grid{grid-template-columns:1fr}.lead-points>div{grid-template-columns:1fr;gap:6px}}

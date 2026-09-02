@@ -33,11 +33,41 @@ function initPlanner(){
   const textEl=document.getElementById("plannerText"),btn=document.getElementById("plannerBtn"),clear=document.getElementById("plannerClear"),title=document.getElementById("plannerTitle"),signal=document.getElementById("plannerSignal"),flow=document.getElementById("plannerFlow"),email=document.getElementById("plannerEmail"),copy=document.getElementById("plannerCopy"),status=document.getElementById("plannerStatus");
   if(!textEl||!btn||!flow)return;
   let last=null;
-  const paint=()=>{const text=String(textEl.value||"").trim();if(!text){title.textContent="Ready when you are";signal.textContent="—";flow.innerHTML='<div class="blueprint-step"><span>01</span><strong>Your input</strong><small>Describe the work on the left.</small></div><div class="blueprint-step"><span>02</span><strong>System logic</strong><small>NEREON maps the likely automation stages.</small></div><div class="blueprint-step"><span>03</span><strong>Human checkpoint</strong><small>Keep approval where decisions matter.</small></div>';email.disabled=true;copy.disabled=true;last=null;return;}last=plannerInsights(text);title.textContent=last.title;signal.textContent=`${last.signal} · ${last.score}/100`;flow.innerHTML=last.stages.slice(0,5).map((x,i)=>`<div class="blueprint-step"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(x[0])}</strong><small>${esc(x[1])}</small></div>`).join("");email.disabled=false;copy.disabled=false;status.textContent="Blueprint ready. Review it, then send it to NEREON.";status.className="form-status success";};
+  const paint=()=>{const text=String(textEl.value||"").trim();if(!text){title.textContent="Ready when you are";signal.textContent="—";flow.innerHTML='<div class="blueprint-step"><span>01</span><strong>Your input</strong><small>Describe the work on the left.</small></div><div class="blueprint-step"><span>02</span><strong>System logic</strong><small>NEREON maps the likely automation stages.</small></div><div class="blueprint-step"><span>03</span><strong>Human checkpoint</strong><small>Keep approval where decisions matter.</small></div>';email.disabled=true;copy.disabled=true;last=null;return;}last=plannerInsights(text); window.__nereonPlannerLast=last;title.textContent=last.title;signal.textContent=`${last.signal} · ${last.score}/100`;flow.innerHTML=last.stages.slice(0,5).map((x,i)=>`<div class="blueprint-step"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(x[0])}</strong><small>${esc(x[1])}</small></div>`).join("");email.disabled=false;copy.disabled=false;status.textContent="Blueprint ready. Review it, then send it to NEREON.";status.className="form-status success";};
   btn.addEventListener("click",paint);clear.addEventListener("click",()=>{textEl.value="";paint();status.textContent="";status.className="form-status";});
   copy.addEventListener("click",async()=>{if(!last)return;const lines=[`NEREON automation blueprint`,`Signal: ${last.signal} (${last.score}/100)`,`Assessment: ${last.title}`,"",...last.stages.map((x,i)=>`${i+1}. ${x[0]} — ${x[1]}`)];try{await navigator.clipboard.writeText(lines.join("\n"));status.textContent="Blueprint copied.";status.className="form-status success";}catch{status.textContent="Copy is unavailable in this browser.";status.className="form-status error";}});
   email.addEventListener("click",()=>{if(!last)return;const text=String(textEl.value||"").trim();const subject=encodeURIComponent("NEREON automation blueprint request");const body=encodeURIComponent(["Hello NEREON,","","Here is the workflow I would like to explore:",text,"",`Assessment: ${last.title}`,`Signal: ${last.signal} (${last.score}/100)`,"","Suggested blueprint:",...last.stages.map((x,i)=>`${i+1}. ${x[0]} — ${x[1]}`),"","Please contact me to discuss a focused pilot."].join("\n"));window.location.href=`mailto:nereon.studio@gmail.com?subject=${subject}&body=${body}`;status.textContent="Opening your email app…";status.className="form-status success";});
 }
 
-async function boot(){const y=document.querySelector("#year");if(y)y.textContent=String(new Date().getFullYear());try{renderOffers(await loadOffers());}catch(err){console.error(err);const m=document.querySelector("[data-offers]");if(m)m.innerHTML='<p class="form-status error">Offers are temporarily unavailable.</p>';}try{renderTrust(await loadTrust());}catch(err){console.error(err);}initROI();initAudit();initWorkflow();initPlanner();initContact();initMenu();initReveal();}
+function initPlannerLead(){
+  const form=document.getElementById("plannerLeadForm");
+  const status=document.getElementById("plannerLeadStatus");
+  if(!form||!status)return;
+  form.addEventListener("submit",e=>{
+    e.preventDefault();
+    const email=String(document.getElementById("leadEmail")?.value||"").trim();
+    const name=String(document.getElementById("leadName")?.value||"").trim();
+    const company=String(document.getElementById("leadCompany")?.value||"").trim();
+    const focus=String(document.getElementById("leadFocus")?.value||"").trim();
+    const plannerText=String(document.getElementById("plannerText")?.value||"").trim();
+    if(!email||!name||!company){status.textContent="Please add your name, company and work email.";status.className="form-status error";return;}
+    const last=typeof window.__nereonPlannerLast!=="undefined"?window.__nereonPlannerLast:null;
+    let subject=`NEREON discovery request — ${company}`;
+    const lines=[`Hello NEREON,` , "",`Name: ${name}`,`Work email: ${email}`,`Company: ${company}`];
+    if(focus) lines.push(`Focus: ${focus}`);
+    if(plannerText){
+      lines.push("","Workflow description:",plannerText);
+    }
+    if(last){
+      lines.push("",`Assessment: ${last.title}`,`Signal: ${last.signal} (${last.score}/100)`,"","Suggested blueprint:");
+      last.stages.forEach((x,i)=>lines.push(`${i+1}. ${x[0]} — ${x[1]}`));
+    }
+    lines.push("","Please contact me to discuss the next step.");
+    window.location.href=`mailto:nereon.studio@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
+    status.textContent="Opening your email app with the discovery brief ready…";
+    status.className="form-status success";
+  });
+}
+
+async function boot(){const y=document.querySelector("#year");if(y)y.textContent=String(new Date().getFullYear());try{renderOffers(await loadOffers());}catch(err){console.error(err);const m=document.querySelector("[data-offers]");if(m)m.innerHTML='<p class="form-status error">Offers are temporarily unavailable.</p>';}try{renderTrust(await loadTrust());}catch(err){console.error(err);}initROI();initAudit();initWorkflow();initPlanner();initPlannerLead();initContact();initMenu();initReveal();}
 boot();
