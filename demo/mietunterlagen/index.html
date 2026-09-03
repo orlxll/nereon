@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEREON — Mietunterlagen AI Checker</title>
+<style>
+body{margin:0;background:#071017;color:#eef7fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1060px;margin:auto;padding:32px 18px 60px}.eyebrow{font-size:12px;letter-spacing:.14em;color:#62e7ff;font-weight:800}
+h1{font-size:clamp(38px,6vw,64px);line-height:1;margin:10px 0}h2{margin:0 0 10px}
+.muted{color:#9eb2bd}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px}
+.card{background:#0d1820;border:1px solid #22343e;border-radius:18px;padding:22px}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer;background:#62e7ff;color:#061018}
+.btn.alt{background:#142731;color:#eef7fb;border:1px solid #2a414e}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.chip{padding:8px 10px;background:#10232d;border:1px solid #29414e;border-radius:999px;font-size:12px}
+.drop{padding:20px;border:1px dashed #3d5a68;border-radius:14px;margin-top:14px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.score{font-size:58px;font-weight:900}.bar{height:10px;background:#132630;border-radius:99px;overflow:hidden;margin:8px 0 18px}.bar i{display:block;height:100%;width:0;background:#62e7ff;transition:.4s}
+.item{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #22343e}.ok{color:#7ce6ab}.warn{color:#ffd08a}.hidden{display:none}
+.step{padding:13px;background:#09141b;border:1px solid #20323c;border-radius:12px;margin-top:9px}.email{margin-top:12px;padding:14px;background:#09141b;border:1px solid #20323c;border-radius:12px;white-space:pre-wrap;line-height:1.5}
+.note{font-size:12px;color:#8298a3;line-height:1.5}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="eyebrow">NEREON / CUSTOMER DEMO</div>
+<h1>Mietunterlagen AI Checker</h1>
+<p class="muted">Ein kleiner Prototyp für die Vorprüfung von Mietunterlagen. Die finale Prüfung und Entscheidung bleibt immer beim Mitarbeiter.</p>
+
+<div class="grid">
+<section class="card">
+<div class="eyebrow">01 · INPUT</div>
+<h2>Neue Bewerbung</h2>
+<p class="muted">Fiktiver Fall für die Demo.</p>
+<div class="drop" id="input">
+<strong>6 Dokumente erkannt</strong>
+<div class="chips">
+<span class="chip">Selbstauskunft.pdf</span><span class="chip">SCHUFA.pdf</span>
+<span class="chip">Einkommensnachweis.pdf</span><span class="chip">Personalausweis.pdf</span>
+<span class="chip">Vermieterbescheinigung.pdf</span><span class="chip">Versicherung.pdf</span>
+</div>
+</div>
+<button class="btn" id="run" style="margin-top:14px">Bewerbung analysieren</button>
+<button class="btn alt" id="reset" style="margin-top:14px">Reset</button>
+</section>
+
+<section class="card">
+<div class="eyebrow">02 · RESULT</div>
+<div class="row"><h2>Vorprüfung</h2><strong id="signal">—</strong></div>
+<div class="score" id="score">—</div>
+<div class="muted">Automation / completeness signal</div>
+<div class="bar"><i id="bar"></i></div>
+<div id="results" class="hidden">
+<div class="item"><span>Selbstauskunft</span><span class="ok">✓ gefunden</span></div>
+<div class="item"><span>SCHUFA</span><span class="ok">✓ gefunden</span></div>
+<div class="item"><span>Einkommensnachweis</span><span class="ok">✓ gefunden</span></div>
+<div class="item"><span>Personalausweis</span><span class="ok">✓ gefunden</span></div>
+<div class="item"><span>Vermieterbescheinigung</span><span class="warn">! fehlt</span></div>
+<div class="item"><span>Versicherung</span><span class="ok">✓ gefunden</span></div>
+</div>
+</section>
+</div>
+
+<section class="card hidden" id="next" style="margin-top:18px">
+<div class="eyebrow">03 · WORKFLOW</div>
+<h2>What NEREON prepares</h2>
+<div class="step"><b>1. Dokumente erkennen</b><div class="muted">Dokumente werden erkannt und dem Vorgang zugeordnet.</div></div>
+<div class="step"><b>2. Vollständigkeit prüfen</b><div class="muted">Fehlende Unterlagen werden markiert.</div></div>
+<div class="step"><b>3. Mitarbeiter-Zusammenfassung</b><div class="muted">Das Team erhält einen kompakten Überblick.</div></div>
+<div class="step"><b>4. Antwortentwurf</b><div class="muted">Eine Rückfrage kann als Entwurf vorbereitet werden.</div></div>
+<div class="eyebrow" style="margin-top:22px">EMAIL DRAFT</div>
+<div class="email">Betreff: Fehlende Unterlage zu Ihrer Mietbewerbung
+
+Guten Tag,
+
+vielen Dank für Ihre Unterlagen. Für die weitere Bearbeitung benötigen wir noch die Vermieterbescheinigung.
+
+Bitte senden Sie uns diese Unterlage nach.
+
+Viele Grüße</div>
+<p class="note">Demo-Daten sind fiktiv. NEREON trifft in diesem Beispiel keine Mietentscheidung.</p>
+</section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+$("run").onclick=()=>{
+ $("results").classList.remove("hidden");
+ $("next").classList.remove("hidden");
+ $("score").textContent="83";
+ $("bar").style.width="83%";
+ $("signal").textContent="PROMISING";
+ $("signal").className="ok";
+ $("input").innerHTML="<strong>Analyse abgeschlossen</strong><div class='chips'><span class='chip'>6 Dokumenttypen erkannt</span><span class='chip'>1 Unterlage fehlt</span><span class='chip'>Human review required</span></div>";
+};
+$("reset").onclick=()=>location.reload();
+</script>
+</body>
+</html>
