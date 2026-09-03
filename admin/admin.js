@@ -61,6 +61,7 @@
     document.querySelectorAll('.mark-contacted').forEach(b=>b.onclick=async()=>{try{await updateLead(b.dataset.id,{status:'contacted',contacted:true});await load()}catch(e){alert(e.message)}});
     document.querySelectorAll('.generate-proposal').forEach(b=>b.onclick=()=>openProposal(b.dataset.id));
   }
+  function renderProjects(projects){const el=$('projects');if(!el)return;if(!projects.length){el.innerHTML='<div class="muted">No activated projects yet.</div>';return;}el.innerHTML=projects.map(p=>`<article class="project-card"><div><p class="eyebrow">${esc(p.status||'onboarding')} · ${esc(p.environment||'test')}</p><h3>${esc(p.company)}</h3><p>${esc(p.name||p.contract_title||'NEREON Project')} · ${esc(p.lead_name||'')}</p></div><div><strong>€${Number(p.amount_eur||0).toLocaleString('de-DE')}</strong><div class="muted">Invoice: ${esc(p.invoice_status||'—')}</div></div></article>`).join('')}
   async function load(){list.innerHTML='<div class="panel empty">Loading leads…</div>';try{const d=await api(`/api/admin/leads?limit=200`);cached=d.leads.map(x=>({...x,status:x.status||'new'}));
       const filtered=cached.filter(l=>{const q=search.value.trim().toLowerCase();return !q||[l.name,l.email,l.company,l.focus,l.workflow].some(v=>String(v||'').toLowerCase().includes(q))}).filter(l=>!statusFilter.value||l.status===statusFilter.value);
       $('count').textContent=cached.length; $('high').textContent=cached.filter(x=>priority(x)==='hot').length; $('won').textContent=d.counts.won||0;
@@ -70,6 +71,7 @@
       $('next').textContent=overdue?`${overdue} overdue`:todayCount?`${todayCount} today`:'—';
       const pc={hot:0,warm:0,cold:0};cached.forEach(l=>{const p=priority(l);if(pc[p]!=null)pc[p]++});renderPipeline(d.counts);renderPriority(pc);renderList();
       $('overdue').textContent=overdue; $('today').textContent=todayCount;
+      try{const projects=await api('/api/admin/projects');renderProjects(projects.projects||[]);}catch(err){renderProjects([]);}
     }catch(e){loginStatus.textContent=e.message;loginStatus.className='status error';if(e.message.includes('Invalid Admin Token'))lock()}}
   async function connectAdmin(){const c=tokenInput.value.trim();if(!c){loginStatus.textContent='Enter the Admin Token.';loginStatus.className='status error';return}token=c;loginStatus.textContent='Connecting…';loginStatus.className='status';try{await api('/api/admin/leads?limit=1');loginCard.classList.add('hidden');dashboard.classList.remove('hidden');await load()}catch(e){token='';loginStatus.textContent=e.message;loginStatus.className='status error'}}
   function lock(){token='';loginCard.classList.remove('hidden');dashboard.classList.add('hidden');tokenInput.value='';if(timer)clearTimeout(timer)}

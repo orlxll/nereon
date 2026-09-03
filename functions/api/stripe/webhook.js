@@ -35,19 +35,24 @@ async function paymentIdFromObject(env, object) {
 }
 async function finalize(env, paymentId) {
   if (!paymentId) return;
-  const row = await env.DB.prepare(`SELECT p.id,p.invoice_id,p.environment,i.contract_id,i.environment invoice_environment FROM payments p JOIN invoices i ON i.id=p.invoice_id WHERE p.id=? LIMIT 1`).bind(paymentId).first();
+  const row = await env.DB.prepare(`SELECT p.id,p.invoice_id,p.environment,i.contract_id,i.environment invoice_environment,i.lead_id,i.amount_eur,i.currency,c.title FROM payments p JOIN invoices i ON i.id=p.invoice_id JOIN contracts c ON c.id=i.contract_id WHERE p.id=? LIMIT 1`).bind(paymentId).first();
   if (!row) return;
   const now = new Date().toISOString();
-  await env.DB.batch([
-    env.DB.prepare('UPDATE payments SET status=?,updated_at=? WHERE id=?').bind('succeeded', now, paymentId),
-    env.DB.prepare('UPDATE invoices SET status=?,updated_at=? WHERE id=?').bind('paid', now, row.invoice_id),
+  const project=await env.DB.prepare('SELECT id FROM projects WHERE contract_id=? LIMIT 1').bind(row.contract_id).first();
+  const projectId=project?.id||`prj_${crypto.randomUUID()}`;
+  const statements=[
+    env.DB.prepare('UPDATE payments SET status=?,updated_at=?,paid_at=? WHERE id=?').bind('succeeded', now, now, paymentId),
+    env.DB.prepare('UPDATE invoices SET status=?,updated_at=?,paid_at=? WHERE id=?').bind('paid', now, now, row.invoice_id),
     env.DB.prepare('UPDATE contracts SET status=?,updated_at=? WHERE id=?').bind('paid', now, row.contract_id),
-    env.DB.prepare('UPDATE invoices SET paid_at=? WHERE id=?').bind(now, row.invoice_id),
-    env.DB.prepare('UPDATE payments SET paid_at=? WHERE id=?').bind(now, paymentId),
-    env.DB.prepare("UPDATE leads SET status='won', won_at=? WHERE id=(SELECT lead_id FROM invoices WHERE id=?)").bind(now, row.invoice_id),
-  ]);
+    env.DB.prepare("UPDATE leads SET status='won', won_at=? WHERE id=?").bind(now, row.lead_id),
+  ];
+  if (!project) {
+    statements.push(env.DB.prepare(`INSERT INTO projects(id,contract_id,lead_id,name,status,amount_eur,currency,environment,started_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)`).bind(projectId,row.contract_id,row.lead_id,row.title||'NEREON Project','onboarding',row.amount_eur,row.currency,row.environment||'test',now,now,now));
+    const tasks=[['Confirm kickoff date','schedule a kickoff call and confirm attendees'],['Collect access requirements','request systems, credentials process, and workspace details'],['Confirm success metric','agree on the measurable outcome for the automation'],['Prepare implementation plan','translate the accepted scope into delivery milestones']];
+    for (let i=0;i<tasks.length;i++) statements.push(env.DB.prepare(`INSERT INTO onboarding_tasks(id,project_id,title,detail,status,position,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)`).bind(`tsk_${crypto.randomUUID()}`,projectId,tasks[i][0],tasks[i][1],'todo',i,now,now));
+  }
+  await env.DB.batch(statements);
 }
-
 export async function onRequestPost({ request, env }) {
   if (!env?.DB) return json({ ok: false, error: 'database_not_configured' }, 503);
   const webhookSecret = String(env.STRIPE_WEBHOOK_SECRET || '');
