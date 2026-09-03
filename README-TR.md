@@ -1,18 +1,26 @@
-# NEREON — Phase 120 / Contract + Payment Foundation
+# NEREON Phase 121 — Stripe Ödeme
 
-Teklif kabulü sonrası sözleşme ve fatura kayıtlarının oluşması için temel altyapı eklendi.
+Bu sürüm, kabul edilmiş tekliften sonra müşterinin güvenli Stripe Checkout ekranına geçmesini sağlar.
 
-## Yeni özellikler
-- `contracts` tablosu
-- `invoices` tablosu
-- `payments` tablosu
-- Admin: `POST /api/admin/contracts`
-- Admin: `GET /api/admin/contracts`
-- Client proposal kabulünde idempotent contract + invoice oluşturma
-- Client portalda kabul sonrası sonraki adımların açık gösterimi
+## Cloudflare Secret'ları
 
-## Önemli
-Bu faz gerçek kart bilgisi toplamaz ve ödeme sağlayıcısı gibi davranmaz. `payments` tablosu ve invoice modeli gerçek Stripe/provider entegrasyonuna hazır temel sağlar. Gerçek ödeme provider bağlantısı ayrı bir fazda yapılmalıdır.
+Cloudflare → NEREON → Settings → Variables and Secrets bölümüne:
 
-## D1 migration
-`migrations/0005_contracts_payments.sql` dosyasını Cloudflare D1 Console'da bir kez çalıştırın.
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+
+eklenir. Gerçek Stripe anahtarları GitHub'a konulmaz.
+
+## D1
+
+`migrations/0006_stripe_checkout.sql` dosyasını D1 Console'da çalıştır.
+
+## Akış
+
+Teklif kabul edilir → Contract/Invoice oluşur → müşteri **Pay invoice** seçer → Stripe Checkout → Stripe webhook → payment/invoice/contract durumu güncellenir.
+
+Stripe webhook endpoint'leri HTTPS üzerinden erişilebilir olmalı ve `Stripe-Signature` doğrulaması yapılmalıdır. Handler ham request body üzerinden imza doğrulaması yapar. citeturn285300view0
+
+## Not
+
+Şu aşamada Stripe hesabında gerçek ödeme almak için gerekli gerçek anahtarları veya webhook secret'ını eklemiyoruz. Önce test/sandbox modunda doğrulama yapacağız. Stripe Checkout Session oluşturma API'si ile ödeme oturumu yaratılıyor. citeturn285300view1
