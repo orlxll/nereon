@@ -77,6 +77,9 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: false, error: 'validation_failed' }, 422, request);
   }
 
+  const appEnvironment = String(env.APP_ENV || 'test').toLowerCase();
+  if (!['test', 'live'].includes(appEnvironment)) return json({ ok: false, error: 'invalid_app_environment' }, 500, request);
+
   const now = new Date().toISOString();
   const leadId = crypto.randomUUID();
   const planId = crypto.randomUUID();
@@ -84,7 +87,7 @@ export async function onRequestPost({ request, env }) {
 
   try {
     await env.DB.batch([
-      env.DB.prepare(`INSERT INTO leads (id, name, email, company, focus, source, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`).bind(leadId, name, email, company, focus, 'automation_planner', now),
+      env.DB.prepare(`INSERT INTO leads (id, name, email, company, focus, source, created_at, environment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(leadId, name, email, company, focus, 'automation_planner', now, appEnvironment),
       env.DB.prepare(`INSERT INTO automation_plans (id, lead_id, workflow, assessment, signal, score, blueprint_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(planId, leadId, workflow, assessment, signal, score, blueprintJson, now),
     ]);
   } catch (error) {

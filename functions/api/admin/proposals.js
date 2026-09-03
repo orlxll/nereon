@@ -44,7 +44,7 @@ function estimateTimeline(scopeCount) {
 
 async function getLead(env, id) {
   return env.DB.prepare(`SELECT l.id,l.name,l.email,l.company,l.focus,l.status,l.notes,
-    p.workflow,p.assessment,p.signal,p.score,p.blueprint_json
+    p.workflow,p.assessment,p.signal,p.score,p.blueprint_json,l.environment
     FROM leads l LEFT JOIN automation_plans p ON p.lead_id=l.id WHERE l.id=? LIMIT 1`).bind(id).first();
 }
 
@@ -93,16 +93,17 @@ export async function onRequestPost({ request, env }) {
       price_eur: estimatePrice(lead),
       currency: 'EUR',
       status: 'draft',
+      environment: String(lead.environment || 'test'),
       created_at: now,
       updated_at: now,
     };
 
     await env.DB.prepare(`INSERT INTO proposals
-      (id,lead_id,title,executive_summary,scope_json,timeline,price_eur,currency,status,created_at,updated_at)
+      (id,lead_id,title,executive_summary,scope_json,timeline,price_eur,currency,status,environment,created_at,updated_at)
       VALUES (?,?,?,?,?,?,?,?,?,?,?)`).bind(
       proposal.id, proposal.lead_id, proposal.title, proposal.executive_summary,
       proposal.scope_json, proposal.timeline, proposal.price_eur, proposal.currency,
-      proposal.status, proposal.created_at, proposal.updated_at
+      proposal.status, proposal.environment, proposal.created_at, proposal.updated_at
     ).run();
 
     return json({ ok:true, proposal });

@@ -26,7 +26,7 @@ async function listLeads(env, search = '', status = '', limit = 200) {
     where.push('l.status = ?');
     binds.push(status);
   }
-  const sql = `SELECT l.id, l.name, l.email, l.company, l.focus, l.source, l.created_at, l.status, l.notes, l.next_action_at, l.last_contacted_at,
+  const sql = `SELECT l.id, l.name, l.email, l.company, l.focus, l.source, l.created_at, l.status, l.notes, l.next_action_at, l.last_contacted_at, l.environment, l.won_at,
                 p.id AS plan_id, p.workflow, p.assessment, p.signal, p.score, p.blueprint_json, p.created_at AS plan_created_at
          FROM leads l LEFT JOIN automation_plans p ON p.lead_id = l.id
          ${where.length ? `WHERE ${where.join(' AND ')}` : ''}

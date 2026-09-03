@@ -27,6 +27,14 @@ async function parsePortalToken(token, secret) {
   if (!payload?.pid || Number(payload.exp) < Math.floor(Date.now() / 1000)) throw new Error('token_expired');
   return payload;
 }
+function expectedEnvironment(env) {
+  const value = String(env.STRIPE_ENVIRONMENT || env.APP_ENV || 'test').toLowerCase();
+  return value === 'live' ? 'live' : 'test';
+}
+function stripeKeyMatchesEnvironment(key, environment) {
+  return environment === 'live' ? key.startsWith('sk_live_') : key.startsWith('sk_test_');
+}
+
 function originOf(request) {
   return new URL(request.url).origin;
 }
@@ -57,6 +65,8 @@ export async function onRequestPost({ request, env }) {
   if (!secret) return json({ ok: false, error: 'portal_secret_not_configured' }, 503);
   const stripeKey = String(env.STRIPE_SECRET_KEY || '');
   if (!stripeKey) return json({ ok: false, error: 'stripe_not_configured' }, 503);
+  const environment = expectedEnvironment(env);
+  if (!stripeKeyMatchesEnvironment(stripeKey, environment)) return json({ ok: false, error: 'stripe_environment_mismatch' }, 500);
   let body;
   try { body = await request.json(); } catch { return json({ ok: false, error: 'invalid_json' }, 400); }
   const token = clean(body.token, 5000);
@@ -66,6 +76,7 @@ export async function onRequestPost({ request, env }) {
       FROM proposals p JOIN leads l ON l.id=p.lead_id WHERE p.id=? LIMIT 1`).bind(payload.pid).first();
     if (!proposal) return json({ ok: false, error: 'proposal_not_found' }, 404);
     if (proposal.status !== 'accepted') return json({ ok: false, error: 'proposal_not_accepted' }, 409);
+  if (String(proposal.environment || 'test') !== environment) return json({ ok: false, error: 'payment_environment_mismatch' }, 409);
     await ensureCommercialRecords(env, proposal);
 
     const invoice = await env.DB.prepare(`SELECT i.*,c.status contract_status FROM invoices i JOIN contracts c ON c.id=i.contract_id

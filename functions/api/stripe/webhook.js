@@ -35,13 +35,16 @@ async function paymentIdFromObject(env, object) {
 }
 async function finalize(env, paymentId) {
   if (!paymentId) return;
-  const row = await env.DB.prepare(`SELECT p.id,p.invoice_id,i.contract_id FROM payments p JOIN invoices i ON i.id=p.invoice_id WHERE p.id=? LIMIT 1`).bind(paymentId).first();
+  const row = await env.DB.prepare(`SELECT p.id,p.invoice_id,p.environment,i.contract_id,i.environment invoice_environment FROM payments p JOIN invoices i ON i.id=p.invoice_id WHERE p.id=? LIMIT 1`).bind(paymentId).first();
   if (!row) return;
   const now = new Date().toISOString();
   await env.DB.batch([
     env.DB.prepare('UPDATE payments SET status=?,updated_at=? WHERE id=?').bind('succeeded', now, paymentId),
     env.DB.prepare('UPDATE invoices SET status=?,updated_at=? WHERE id=?').bind('paid', now, row.invoice_id),
     env.DB.prepare('UPDATE contracts SET status=?,updated_at=? WHERE id=?').bind('paid', now, row.contract_id),
+    env.DB.prepare('UPDATE invoices SET paid_at=? WHERE id=?').bind(now, row.invoice_id),
+    env.DB.prepare('UPDATE payments SET paid_at=? WHERE id=?').bind(now, paymentId),
+    env.DB.prepare("UPDATE leads SET status='won', won_at=? WHERE id=(SELECT lead_id FROM invoices WHERE id=?)").bind(now, row.invoice_id),
   ]);
 }
 
@@ -54,6 +57,10 @@ export async function onRequestPost({ request, env }) {
   if (!(await verifyStripeSignature(body, signature, webhookSecret))) return json({ ok: false, error: 'invalid_signature' }, 400);
   let event;
   try { event = JSON.parse(body); } catch { return json({ ok: false, error: 'invalid_json' }, 400); }
+
+  const expectedEnvironment = String(env.STRIPE_ENVIRONMENT || env.APP_ENV || 'test').toLowerCase() === 'live' ? 'live' : 'test';
+  const eventEnvironment = event.livemode ? 'live' : 'test';
+  if (eventEnvironment !== expectedEnvironment) return json({ ok: false, error: 'stripe_event_environment_mismatch' }, 400);
 
   try {
     switch (event.type) {
