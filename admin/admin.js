@@ -1,107 +1,25 @@
 (() => {
-  const tokenInput = document.getElementById('token');
-  const connect = document.getElementById('connect');
-  const loginStatus = document.getElementById('loginStatus');
-  const loginCard = document.getElementById('loginCard');
-  const dashboard = document.getElementById('dashboard');
-  const list = document.getElementById('list');
-  const search = document.getElementById('search');
-  const refresh = document.getElementById('refresh');
-  const logout = document.getElementById('logout');
-  const count = document.getElementById('count');
-  const high = document.getElementById('high');
-  const latest = document.getElementById('latest');
-
-  let token = '';
-  let timer = null;
-
-  const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
-  const fmtDate = (value) => value ? new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
-  const blueprint = (raw) => {
-    try {
-      const items = JSON.parse(raw || '[]');
-      if (!Array.isArray(items) || !items.length) return '<span class="muted">No blueprint</span>';
-      return `<ol>${items.slice(0, 8).map((x) => `<li><b>${escapeHtml(x.title)}</b><span>${escapeHtml(x.detail)}</span></li>`).join('')}</ol>`;
-    } catch { return '<span class="muted">Invalid blueprint</span>'; }
-  };
-
-  async function load() {
-    list.innerHTML = '<div class="panel empty">Loading leads…</div>';
-    const params = new URLSearchParams({ limit: '200' });
-    const q = search.value.trim();
-    if (q) params.set('q', q);
-    try {
-      const response = await fetch(`/api/admin/leads?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store'
-      });
-      const data = await response.json().catch(() => ({}));
-      if (response.status === 401) throw new Error('Invalid Admin Token.');
-      if (!response.ok || !data.ok) throw new Error(data.error || 'Could not load leads.');
-
-      count.textContent = data.count;
-      const highCount = data.leads.filter((lead) => String(lead.signal || '').toLowerCase() === 'high signal').length;
-      high.textContent = highCount;
-      latest.textContent = data.leads[0]?.created_at ? fmtDate(data.leads[0].created_at) : '—';
-
-      if (!data.leads.length) {
-        list.innerHTML = '<div class="panel empty">No leads found.</div>';
-        return;
-      }
-
-      list.innerHTML = data.leads.map((lead) => `
-        <article class="lead panel">
-          <div class="lead-head">
-            <div><p class="eyebrow">${escapeHtml(lead.source || 'lead')}</p><h2>${escapeHtml(lead.company)}</h2><p class="person">${escapeHtml(lead.name)} · ${escapeHtml(lead.email)}</p></div>
-            <div class="date">${fmtDate(lead.created_at)}</div>
-          </div>
-          <div class="lead-grid">
-            <div><span class="label">Workflow</span><p>${escapeHtml(lead.workflow || lead.focus || '—')}</p></div>
-            <div><span class="label">Assessment</span><p>${escapeHtml(lead.assessment || '—')}</p></div>
-            <div><span class="label">Signal</span><p><strong>${escapeHtml(lead.signal || '—')}</strong>${lead.score != null ? ` · ${escapeHtml(lead.score)}/100` : ''}</p></div>
-          </div>
-          <details><summary>Suggested blueprint</summary>${blueprint(lead.blueprint_json)}</details>
-        </article>`).join('');
-    } catch (error) {
-      loginStatus.textContent = error.message;
-      loginStatus.className = 'status error';
-      if (error.message.includes('Invalid Admin Token')) lock();
-    }
-  }
-
-  async function connectAdmin() {
-    const candidate = tokenInput.value.trim();
-    if (!candidate) { loginStatus.textContent = 'Enter the Admin Token.'; loginStatus.className = 'status error'; return; }
-    token = candidate;
-    loginStatus.textContent = 'Connecting…';
-    loginStatus.className = 'status';
-    try {
-      const response = await fetch('/api/admin/leads?limit=1', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
-      if (response.status === 401) throw new Error('Invalid Admin Token.');
-      if (!response.ok) throw new Error('Could not connect to NEREON API.');
-      loginCard.classList.add('hidden');
-      dashboard.classList.remove('hidden');
-      await load();
-    } catch (error) {
-      token = '';
-      loginStatus.textContent = error.message;
-      loginStatus.className = 'status error';
-    }
-  }
-
-  function lock() {
-    token = '';
-    loginCard.classList.remove('hidden');
-    dashboard.classList.add('hidden');
-    tokenInput.value = '';
-    loginStatus.textContent = 'Dashboard locked.';
-    loginStatus.className = 'status';
-    if (timer) clearTimeout(timer);
-  }
-
-  connect.addEventListener('click', connectAdmin);
-  tokenInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') connectAdmin(); });
-  refresh.addEventListener('click', load);
-  logout.addEventListener('click', lock);
-  search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(load, 250); });
+  const $ = (id) => document.getElementById(id);
+  const tokenInput=$('token'), connect=$('connect'), loginStatus=$('loginStatus'), loginCard=$('loginCard'), dashboard=$('dashboard'), list=$('list'), search=$('search'), statusFilter=$('statusFilter'), refresh=$('refresh'), logout=$('logout');
+  let token='', timer=null;
+  const statuses=['new','contacted','replied','discovery','proposal','won','lost'];
+  const labels={new:'New',contacted:'Contacted',replied:'Replied',discovery:'Discovery',proposal:'Proposal',won:'Won',lost:'Lost'};
+  const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const fmt=v=>v?new Date(v).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}):'—';
+  const blueprint=raw=>{try{const xs=JSON.parse(raw||'[]');return xs.length?`<ol>${xs.slice(0,6).map(x=>`<li><b>${esc(x.title)}</b><span>${esc(x.detail)}</span></li>`).join('')}</ol>`:'<span class="muted">No blueprint</span>'}catch{return '<span class="muted">Invalid blueprint</span>'}};
+  const statusSelect=(lead)=>`<select class="stage" data-id="${esc(lead.id)}">${statuses.map(s=>`<option value="${s}" ${s===lead.status?'selected':''}>${labels[s]}</option>`).join('')}</select>`;
+  async function api(url,opts={}){const r=await fetch(url,{...opts,headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json',...(opts.headers||{})},cache:'no-store'});const d=await r.json().catch(()=>({}));if(r.status===401)throw new Error('Invalid Admin Token.');if(!r.ok||!d.ok)throw new Error(d.error||'Request failed.');return d;}
+  async function updateLead(id,patch){return api(`/api/admin/leads?id=${encodeURIComponent(id)}`,{method:'PATCH',body:JSON.stringify(patch)})}
+  function renderPipeline(counts){$('pipeline').innerHTML=statuses.map(s=>`<button type="button" class="pipe ${s===statusFilter.value?'active':''}" data-status="${s}"><span>${labels[s]}</span><strong>${counts[s]||0}</strong></button>`).join('')+'<div class="pipe total"><span>Total</span><strong>'+Object.values(counts).reduce((a,b)=>a+b,0)+'</strong></div>';document.querySelectorAll('.pipe[data-status]').forEach(b=>b.onclick=()=>{statusFilter.value=b.dataset.status;load()});}
+  async function load(){list.innerHTML='<div class="panel empty">Loading leads…</div>';try{const p=new URLSearchParams({limit:'200'});const q=search.value.trim();if(q)p.set('q',q);if(statusFilter.value)p.set('status',statusFilter.value);const d=await api(`/api/admin/leads?${p}`);$('count').textContent=d.count; $('high').textContent=d.leads.filter(x=>String(x.signal||'').toLowerCase().includes('high')).length; $('won').textContent=d.counts.won||0; const due=d.leads.filter(x=>x.next_action_at).sort((a,b)=>new Date(a.next_action_at)-new Date(b.next_action_at))[0]; $('next').textContent=due?fmt(due.next_action_at):'—'; renderPipeline(d.counts);
+      if(!d.leads.length){list.innerHTML='<div class="panel empty">No leads found.</div>';return;}
+      list.innerHTML=d.leads.map(l=>`<article class="lead panel"><div class="lead-head"><div><p class="eyebrow">${esc(l.source||'lead')}</p><h2>${esc(l.company)}</h2><p class="person">${esc(l.name)} · ${esc(l.email)}</p></div><div>${statusSelect(l)}<div class="date">${fmt(l.created_at)}</div></div></div><div class="lead-grid"><div><span class="label">Workflow</span><p>${esc(l.workflow||l.focus||'—')}</p></div><div><span class="label">Signal</span><p><strong>${esc(l.signal||'—')}</strong>${l.score!=null?` · ${esc(l.score)}/100`:''}</p></div><div><span class="label">Next action</span><input class="next-action" data-id="${esc(l.id)}" type="datetime-local" value="${l.next_action_at?new Date(l.next_action_at).toISOString().slice(0,16):''}"></div></div><div class="notes"><span class="label">Notes</span><textarea class="note" data-id="${esc(l.id)}" rows="3" placeholder="Discovery notes, objections, next steps…">${esc(l.notes)}</textarea><div class="actions"><button type="button" class="save-note" data-id="${esc(l.id)}">Save notes</button><button type="button" class="mark-contacted ghost" data-id="${esc(l.id)}">Mark contacted</button></div></div><details><summary>Suggested blueprint</summary>${blueprint(l.blueprint_json)}</details></article>`).join('');
+      document.querySelectorAll('.stage').forEach(el=>el.onchange=async()=>{try{await updateLead(el.dataset.id,{status:el.value});load()}catch(e){alert(e.message)}});
+      document.querySelectorAll('.save-note').forEach(b=>b.onclick=async()=>{const note=document.querySelector(`.note[data-id="${CSS.escape(b.dataset.id)}"]`).value;const input=document.querySelector(`.next-action[data-id="${CSS.escape(b.dataset.id)}"]`).value;try{await updateLead(b.dataset.id,{notes:note,next_action_at:input?new Date(input).toISOString():null});b.textContent='Saved';setTimeout(()=>b.textContent='Save notes',900)}catch(e){alert(e.message)}});
+      document.querySelectorAll('.next-action').forEach(el=>el.onchange=async()=>{try{await updateLead(el.dataset.id,{next_action_at:el.value?new Date(el.value).toISOString():null})}catch(e){alert(e.message)}});
+      document.querySelectorAll('.mark-contacted').forEach(b=>b.onclick=async()=>{try{await updateLead(b.dataset.id,{status:'contacted',contacted:true});load()}catch(e){alert(e.message)}});
+    }catch(e){loginStatus.textContent=e.message;loginStatus.className='status error';if(e.message.includes('Invalid Admin Token'))lock()}}
+  async function connectAdmin(){const c=tokenInput.value.trim();if(!c){loginStatus.textContent='Enter the Admin Token.';loginStatus.className='status error';return}token=c;loginStatus.textContent='Connecting…';loginStatus.className='status';try{await api('/api/admin/leads?limit=1');loginCard.classList.add('hidden');dashboard.classList.remove('hidden');await load()}catch(e){token='';loginStatus.textContent=e.message;loginStatus.className='status error'}}
+  function lock(){token='';loginCard.classList.remove('hidden');dashboard.classList.add('hidden');tokenInput.value='';if(timer)clearTimeout(timer)}
+  connect.onclick=connectAdmin;tokenInput.onkeydown=e=>{if(e.key==='Enter')connectAdmin()};refresh.onclick=load;logout.onclick=lock;statusFilter.onchange=load;search.oninput=()=>{clearTimeout(timer);timer=setTimeout(load,250)};
 })();
