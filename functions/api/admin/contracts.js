@@ -1,0 +1,17 @@
+function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}})}
+function authorized(request,env){const e=String(env?.ADMIN_TOKEN||'');const h=request.headers.get('Authorization')||'';return !!e&&h.startsWith('Bearer ')&&h.slice(7)===e}
+const clean=(v,m=4000)=>String(v??'').trim().slice(0,m)
+export async function onRequestGet({request,env}){
+  if(!authorized(request,env))return json({ok:false,error:'unauthorized'},401);if(!env?.DB)return json({ok:false,error:'database_not_configured'},503)
+  const url=new URL(request.url),leadId=clean(url.searchParams.get('lead_id'),100)
+  try{const q=leadId?env.DB.prepare(`SELECT c.*,i.id invoice_id,i.status invoice_status,i.amount_eur invoice_amount FROM contracts c LEFT JOIN invoices i ON i.contract_id=c.id WHERE c.lead_id=? ORDER BY c.created_at DESC`).bind(leadId):env.DB.prepare(`SELECT c.*,i.id invoice_id,i.status invoice_status,i.amount_eur invoice_amount FROM contracts c LEFT JOIN invoices i ON i.contract_id=c.id ORDER BY c.created_at DESC LIMIT 200`);const r=await q.all();return json({ok:true,contracts:r.results})}catch(e){return json({ok:false,error:'database_read_failed'},500)}}
+export async function onRequestPost({request,env}){
+ if(!authorized(request,env))return json({ok:false,error:'unauthorized'},401);if(!env?.DB)return json({ok:false,error:'database_not_configured'},503);let b;try{b=await request.json()}catch{return json({ok:false,error:'invalid_json'},400)}
+ const proposalId=clean(b.proposal_id,100);if(!proposalId)return json({ok:false,error:'proposal_id_required'},400)
+ try{const existing=await env.DB.prepare('SELECT * FROM contracts WHERE proposal_id=? LIMIT 1').bind(proposalId).first();if(existing){return json({ok:true,contract:existing,existing:true})}
+ const p=await env.DB.prepare('SELECT p.*,l.id lead_id,l.company FROM proposals p JOIN leads l ON l.id=p.lead_id WHERE p.id=? LIMIT 1').bind(proposalId).first();if(!p)return json({ok:false,error:'proposal_not_found'},404)
+ const now=new Date().toISOString(),cid=`ctr_${crypto.randomUUID()}`,iid=`inv_${crypto.randomUUID()}`;
+ const contract={id:cid,proposal_id:p.id,lead_id:p.lead_id,status:p.status==='accepted'?'accepted':'pending_acceptance',title:p.title,amount_eur:Number(p.price_eur||0),currency:p.currency||'EUR',accepted_at:p.status==='accepted'?now:null,created_at:now,updated_at:now};
+ const due=new Date(Date.now()+14*24*3600*1000).toISOString(); const invoice={id:iid,contract_id:cid,amount_eur:contract.amount_eur,currency:contract.currency,status:'pending',due_at:due,created_at:now,updated_at:now};
+ await env.DB.batch([env.DB.prepare(`INSERT INTO contracts(id,proposal_id,lead_id,status,title,amount_eur,currency,accepted_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(contract.id,contract.proposal_id,contract.lead_id,contract.status,contract.title,contract.amount_eur,contract.currency,contract.accepted_at,contract.created_at,contract.updated_at),env.DB.prepare(`INSERT INTO invoices(id,contract_id,amount_eur,currency,status,due_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)`).bind(invoice.id,invoice.contract_id,invoice.amount_eur,invoice.currency,invoice.status,invoice.due_at,invoice.created_at,invoice.updated_at)]);
+ return json({ok:true,contract,invoice},201)}catch(e){console.error(e);return json({ok:false,error:'contract_creation_failed'},500)}}

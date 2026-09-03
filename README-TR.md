@@ -1,21 +1,18 @@
-# NEREON — Phase 116 / Sales Pipeline
+# NEREON — Phase 120 / Contract + Payment Foundation
 
-Bu sürüm admin panelini sadece görüntüleme ekranından satış operasyon paneline yükseltir.
+Teklif kabulü sonrası sözleşme ve fatura kayıtlarının oluşması için temel altyapı eklendi.
 
 ## Yeni özellikler
-- Lead pipeline: New → Contacted → Replied → Discovery → Proposal → Won/Lost
-- Pipeline sayaçları ve filtreleme
-- Lead notları
-- Next action tarihi
-- Mark contacted aksiyonu
-- Status güncelleme
-- Admin API PATCH endpoint
+- `contracts` tablosu
+- `invoices` tablosu
+- `payments` tablosu
+- Admin: `POST /api/admin/contracts`
+- Admin: `GET /api/admin/contracts`
+- Client proposal kabulünde idempotent contract + invoice oluşturma
+- Client portalda kabul sonrası sonraki adımların açık gösterimi
+
+## Önemli
+Bu faz gerçek kart bilgisi toplamaz ve ödeme sağlayıcısı gibi davranmaz. `payments` tablosu ve invoice modeli gerçek Stripe/provider entegrasyonuna hazır temel sağlar. Gerçek ödeme provider bağlantısı ayrı bir fazda yapılmalıdır.
 
 ## D1 migration
-`migrations/0002_sales_pipeline.sql` dosyası `leads` tablosuna şu alanları ekler:
-- status
-- notes
-- next_action_at
-- last_contacted_at
-
-Migration bir kez Cloudflare D1'de çalıştırılmalıdır.
+`migrations/0005_contracts_payments.sql` dosyasını Cloudflare D1 Console'da bir kez çalıştırın.
