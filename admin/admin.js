@@ -78,3 +78,5 @@
   function lock(){try{localStorage.removeItem('nereon_admin_token')}catch{};token='';loginCard.classList.remove('hidden');dashboard.classList.add('hidden');tokenInput.value='';if(timer)clearTimeout(timer)}
   $('closeProposal').onclick=()=>proposalModal.classList.add('hidden'); proposalModal.addEventListener('click',e=>{if(e.target===proposalModal) proposalModal.classList.add('hidden')}); connect.onclick=connectAdmin;tokenInput.onkeydown=e=>{if(e.key==='Enter')connectAdmin()};refresh.onclick=load;const rp=$('refreshProjects');if(rp)rp.onclick=load;logout.onclick=lock;statusFilter.onchange=load;priorityFilter.onchange=renderList;search.oninput=()=>{clearTimeout(timer);timer=setTimeout(renderList,150)};
 })();
+
+async function loadProjectActivity(projectId){try{const r=await api('/api/admin/activity?id='+encodeURIComponent(projectId));if(!r.ok)throw new Error(r.error||'Activity failed');return r.events||[]}catch(e){console.error(e);return []}}
