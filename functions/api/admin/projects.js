@@ -18,6 +18,18 @@ export async function onRequestGet({request,env}){
     return json({ok:true,projects:r.results||[]});
   }catch(e){console.error(e);return json({ok:false,error:'database_read_failed'},500)}
 }
+export async function onRequestGetOne({request,env}){
+  if(!authorized(request,env))return json({ok:false,error:'unauthorized'},401);
+  if(!env?.DB)return json({ok:false,error:'database_not_configured'},503);
+  const id=new URL(request.url).searchParams.get('id'); if(!id)return json({ok:false,error:'project_id_required'},400);
+  try{
+    const project=await env.DB.prepare(`SELECT p.*,l.name lead_name,l.company,l.email,c.title contract_title,i.status invoice_status,i.amount_eur invoice_amount FROM projects p JOIN leads l ON l.id=p.lead_id JOIN contracts c ON c.id=p.contract_id LEFT JOIN invoices i ON i.contract_id=c.id WHERE p.id=? LIMIT 1`).bind(id).first();
+    if(!project)return json({ok:false,error:'project_not_found'},404);
+    const tasks=await env.DB.prepare('SELECT * FROM onboarding_tasks WHERE project_id=? ORDER BY position ASC,created_at ASC').bind(id).all();
+    return json({ok:true,project,tasks:tasks.results||[]});
+  }catch(e){console.error(e);return json({ok:false,error:'database_read_failed'},500)}
+}
+
 export async function onRequestPatch({request,env}){
   if(!authorized(request,env))return json({ok:false,error:'unauthorized'},401);
   if(!env?.DB)return json({ok:false,error:'database_not_configured'},503);

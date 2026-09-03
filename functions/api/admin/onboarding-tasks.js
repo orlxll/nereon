@@ -8,6 +8,22 @@ export async function onRequestGet({request,env}){
   try{const r=await env.DB.prepare('SELECT * FROM onboarding_tasks WHERE project_id=? ORDER BY position ASC,created_at ASC').bind(projectId).all();return json({ok:true,tasks:r.results||[]})}
   catch(e){console.error(e);return json({ok:false,error:'database_read_failed'},500)}
 }
+export async function onRequestPost({request,env}){
+  if(!authorized(request,env))return json({ok:false,error:'unauthorized'},401);
+  if(!env?.DB)return json({ok:false,error:'database_not_configured'},503);
+  let body={};try{body=await request.json()}catch{return json({ok:false,error:'invalid_json'},400)}
+  const projectId=String(body.project_id||''); const title=String(body.title||'').trim(); const detail=String(body.detail||'');
+  if(!projectId||!title)return json({ok:false,error:'project_id_and_title_required'},400);
+  try{
+    const project=await env.DB.prepare('SELECT id FROM projects WHERE id=? LIMIT 1').bind(projectId).first();
+    if(!project)return json({ok:false,error:'project_not_found'},404);
+    const positionRow=await env.DB.prepare('SELECT COALESCE(MAX(position),-1)+1 AS next_position FROM onboarding_tasks WHERE project_id=?').bind(projectId).first();
+    const id=crypto.randomUUID(); const t=now();
+    await env.DB.prepare('INSERT INTO onboarding_tasks (id,project_id,title,detail,status,position,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)').bind(id,projectId,title,detail,'todo',Number(positionRow?.next_position||0),t,t).run();
+    return json({ok:true,task_id:id},201);
+  }catch(e){console.error(e);return json({ok:false,error:'database_create_failed'},500)}
+}
+
 export async function onRequestPatch({request,env}){
   if(!authorized(request,env))return json({ok:false,error:'unauthorized'},401);
   if(!env?.DB)return json({ok:false,error:'database_not_configured'},503);
