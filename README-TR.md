@@ -1,26 +1,11 @@
-# NEREON Phase 121 — Stripe Ödeme
+# NEREON Phase 126 — Commercial Schema Sync
 
-Bu sürüm, kabul edilmiş tekliften sonra müşterinin güvenli Stripe Checkout ekranına geçmesini sağlar.
+Fixes the existing D1 schema mismatch used by the Client Portal.
 
-## Cloudflare Secret'ları
+Adds:
+- contracts.title
+- contracts.updated_at
+- invoices.updated_at
 
-Cloudflare → NEREON → Settings → Variables and Secrets bölümüne:
-
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-
-eklenir. Gerçek Stripe anahtarları GitHub'a konulmaz.
-
-## D1
-
-`migrations/0006_stripe_checkout.sql` dosyasını D1 Console'da çalıştır.
-
-## Akış
-
-Teklif kabul edilir → Contract/Invoice oluşur → müşteri **Pay invoice** seçer → Stripe Checkout → Stripe webhook → payment/invoice/contract durumu güncellenir.
-
-Stripe webhook endpoint'leri HTTPS üzerinden erişilebilir olmalı ve `Stripe-Signature` doğrulaması yapılmalıdır. Handler ham request body üzerinden imza doğrulaması yapar. citeturn285300view0
-
-## Not
-
-Şu aşamada Stripe hesabında gerçek ödeme almak için gerekli gerçek anahtarları veya webhook secret'ını eklemiyoruz. Önce test/sandbox modunda doğrulama yapacağız. Stripe Checkout Session oluşturma API'si ile ödeme oturumu yaratılıyor. citeturn285300view1
+Run `migrations/0006_commercial_schema_sync.sql` once in:
+Cloudflare → D1 → nereon-leads → Console
