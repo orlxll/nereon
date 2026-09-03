@@ -30,7 +30,7 @@ async function parsePortalToken(token, secret) {
 function originOf(request) {
   return new URL(request.url).origin;
 }
-async function ensureCommercialRecords(env,p){if(!p||p.status!=='accepted')return;const existing=await env.DB.prepare('SELECT id FROM contracts WHERE proposal_id=? LIMIT 1').bind(p.id).first();if(existing)return;const cid='ctr_'+crypto.randomUUID(),iid='inv_'+crypto.randomUUID(),now=new Date().toISOString(),due=new Date(Date.now()+14*24*3600*1000).toISOString();try{await env.DB.batch([env.DB.prepare(`INSERT INTO contracts(id,proposal_id,lead_id,status,title,amount_eur,currency,accepted_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(cid,p.id,p.lead_id,'accepted',p.title,p.price_eur,p.currency,now,now,now),env.DB.prepare(`INSERT INTO invoices(id,contract_id,amount_eur,currency,status,due_date,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)`).bind(iid,cid,p.price_eur,p.currency,'pending',due,now,now)]);}catch(e){const check=await env.DB.prepare('SELECT id FROM contracts WHERE proposal_id=? LIMIT 1').bind(p.id).first();if(!check)throw e;}}
+async function ensureCommercialRecords(env,p){if(!p||p.status!=='accepted')return;const existing=await env.DB.prepare('SELECT id FROM contracts WHERE proposal_id=? LIMIT 1').bind(p.id).first();if(existing)return;const cid='ctr_'+crypto.randomUUID(),iid='inv_'+crypto.randomUUID(),now=new Date().toISOString(),due=new Date(Date.now()+14*24*3600*1000).toISOString();try{await env.DB.batch([env.DB.prepare(`INSERT INTO contracts(id,proposal_id,lead_id,status,title,amount_eur,currency,accepted_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(cid,p.id,p.lead_id,'accepted',p.title,p.price_eur,p.currency,now,now,now),env.DB.prepare(`INSERT INTO invoices(id,contract_id,lead_id,amount_eur,currency,status,due_date,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)`).bind(iid,cid,p.lead_id,p.price_eur,p.currency,'pending',due,now,now)]);}catch(e){const check=await env.DB.prepare('SELECT id FROM contracts WHERE proposal_id=? LIMIT 1').bind(p.id).first();if(!check)throw e;}}
 async function stripeRequest(path, params, secret, idempotencyKey) {
   const body = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) body.set(k, String(v));
@@ -107,6 +107,7 @@ export async function onRequestPost({ request, env }) {
       id: paymentId,
       invoice_id: invoice.id,
       provider: 'stripe',
+      lead_id: String(proposal.lead_id),
       provider_payment_id: String(session.id || ''),
       checkout_url: String(session.url || ''),
       amount_eur: Number(invoice.amount_eur || 0),
@@ -116,8 +117,8 @@ export async function onRequestPost({ request, env }) {
       updated_at: now,
     };
     await env.DB.prepare(`INSERT INTO payments
-      (id,invoice_id,provider,provider_payment_id,checkout_url,amount_eur,currency,status,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?)`).bind(payment.id,payment.invoice_id,payment.provider,payment.provider_payment_id,payment.checkout_url,payment.amount_eur,payment.currency,payment.status,payment.created_at,payment.updated_at).run();
+      (id,invoice_id,lead_id,provider,provider_payment_id,checkout_url,amount_eur,currency,status,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)`).bind(payment.id,payment.invoice_id,payment.lead_id,payment.provider,payment.provider_payment_id,payment.checkout_url,payment.amount_eur,payment.currency,payment.status,payment.created_at,payment.updated_at).run();
     return json({ ok: true, checkout_url: payment.checkout_url, payment }, 201);
   } catch (e) {
     console.error('Create checkout failed', e);

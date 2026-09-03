@@ -1,11 +1,5 @@
-# NEREON Phase 126 — Commercial Schema Sync
+# NEREON Phase 127 — Invoice Lead ID Reconciliation
 
-Fixes the existing D1 schema mismatch used by the Client Portal.
+Düzeltme: mevcut D1 üretim şemasında `invoices.lead_id` zorunlu olduğu için invoice INSERT'leri `lead_id` ile uyumlu hale getirildi. Stripe payment INSERT'ine de `lead_id` eklendi.
 
-Adds:
-- contracts.title
-- contracts.updated_at
-- invoices.updated_at
-
-Run `migrations/0006_commercial_schema_sync.sql` once in:
-Cloudflare → D1 → nereon-leads → Console
+Yeni migration gerekmez; mevcut veri korunur.

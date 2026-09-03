@@ -16,18 +16,21 @@ CREATE TABLE IF NOT EXISTS contracts (
 CREATE TABLE IF NOT EXISTS invoices (
   id TEXT PRIMARY KEY,
   contract_id TEXT NOT NULL,
+  lead_id TEXT NOT NULL,
   amount_eur REAL NOT NULL DEFAULT 0,
   currency TEXT NOT NULL DEFAULT 'EUR',
   status TEXT NOT NULL DEFAULT 'pending',
   due_date TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  FOREIGN KEY (contract_id) REFERENCES contracts(id)
+  FOREIGN KEY (contract_id) REFERENCES contracts(id),
+  FOREIGN KEY (lead_id) REFERENCES leads(id)
 );
 
 CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
   invoice_id TEXT NOT NULL,
+  lead_id TEXT NOT NULL,
   provider TEXT NOT NULL DEFAULT 'pending_provider',
   provider_payment_id TEXT,
   amount_eur REAL NOT NULL DEFAULT 0,
@@ -35,7 +38,8 @@ CREATE TABLE IF NOT EXISTS payments (
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+  FOREIGN KEY (invoice_id) REFERENCES invoices(id),
+  FOREIGN KEY (lead_id) REFERENCES leads(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_contracts_status ON contracts(status);
