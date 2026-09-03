@@ -1,0 +1,18 @@
+function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}})}
+const clean=(v,m=6000)=>String(v??'').trim().slice(0,m)
+function ub64(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s);const a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a}
+function txt(s){return new TextEncoder().encode(s)}
+async function validSig(payload,sig,secret){const key=await crypto.subtle.importKey('raw',txt(secret),{name:'HMAC',hash:'SHA-256'},false,['verify']);return crypto.subtle.verify('HMAC',key,ub64(sig),txt(payload))}
+async function parseToken(token,secret){const parts=String(token||'').split('.');if(parts.length!==2)throw new Error('invalid_token');const raw=new TextDecoder().decode(ub64(parts[0]));if(!(await validSig(raw,parts[1],secret)))throw new Error('invalid_token');const p=JSON.parse(raw);if(!p?.pid||Number(p.exp)<Math.floor(Date.now()/1000))throw new Error('token_expired');return p}
+async function load(env,pid){return env.DB.prepare(`SELECT p.id,p.title,p.executive_summary,p.scope_json,p.timeline,p.price_eur,p.currency,p.status,p.client_message,p.updated_at,l.company FROM proposals p JOIN leads l ON l.id=p.lead_id WHERE p.id=? LIMIT 1`).bind(pid).first()}
+export async function onRequestGet({request,env}){
+  if(!env?.DB)return json({ok:false,error:'database_not_configured'},503); const url=new URL(request.url); const secret=String(env.PORTAL_SECRET||env.ADMIN_TOKEN||''); if(!secret)return json({ok:false,error:'portal_secret_not_configured'},503)
+  try{const token=await parseToken(url.searchParams.get('token'),secret);const p=await load(env,token.pid);if(!p)return json({ok:false,error:'proposal_not_found'},404); await env.DB.prepare(`UPDATE proposals SET last_client_access_at=?, client_access_count=client_access_count+1 WHERE id=?`).bind(new Date().toISOString(),p.id).run(); let scope=[];try{scope=JSON.parse(p.scope_json||'[]')}catch{} return json({ok:true,proposal:{id:p.id,title:p.title,company:p.company,executive_summary:p.executive_summary,scope,timeline:p.timeline,price_eur:p.price_eur,currency:p.currency,status:p.status,client_message:p.client_message||'',updated_at:p.updated_at}})}catch(e){return json({ok:false,error:e.message||'invalid_token'},401)}
+}
+export async function onRequestPost({request,env}){
+  if(!env?.DB)return json({ok:false,error:'database_not_configured'},503); const secret=String(env.PORTAL_SECRET||env.ADMIN_TOKEN||''); if(!secret)return json({ok:false,error:'portal_secret_not_configured'},503)
+  let body; try{body=await request.json()}catch{return json({ok:false,error:'invalid_json'},400)}
+  const action=clean(body.action,40); const token=clean(body.token,5000); const message=clean(body.message,4000)
+  if(!['accept','request_changes','reject'].includes(action))return json({ok:false,error:'invalid_action'},422)
+  try{const t=await parseToken(token,secret);const p=await load(env,t.pid);if(!p)return json({ok:false,error:'proposal_not_found'},404);if(['accepted','rejected'].includes(p.status))return json({ok:false,error:'proposal_locked'},409);const now=new Date().toISOString();let status='sent';if(action==='accept')status='accepted';if(action==='reject')status='rejected';await env.DB.prepare(`UPDATE proposals SET status=?, client_message=?, updated_at=? WHERE id=?`).bind(status,message,now,p.id).run();return json({ok:true,status,message:action==='accept'?'proposal_accepted':action==='request_changes'?'changes_requested':'proposal_rejected'})}catch(e){return json({ok:false,error:e.message||'invalid_token'},401)}
+}
