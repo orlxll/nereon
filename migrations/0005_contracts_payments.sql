@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS invoices (
   amount_eur REAL NOT NULL DEFAULT 0,
   currency TEXT NOT NULL DEFAULT 'EUR',
   status TEXT NOT NULL DEFAULT 'pending',
-  due_at TEXT,
+  due_date TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (contract_id) REFERENCES contracts(id)
